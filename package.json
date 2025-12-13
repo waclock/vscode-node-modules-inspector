@@ -1,0 +1,106 @@
+{
+  "name": "node-modules-inspector",
+  "displayName": "Node Modules Inspector",
+  "description": "Inspect node_modules with version info, dependency classification, and smart grouping for monorepos",
+  "version": "1.0.0",
+  "publisher": "waclock",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waclock/vscode-node-modules-inspector"
+  },
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "keywords": [
+    "node_modules",
+    "dependencies",
+    "npm",
+    "package",
+    "version",
+    "monorepo"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/node_modules"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "nodeModulesVersions",
+          "name": "Node Modules"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "nodeModulesVersions.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "nodeModulesVersions.search",
+        "title": "Search Packages",
+        "icon": "$(search)"
+      },
+      {
+        "command": "nodeModulesVersions.openPackageJson",
+        "title": "Open package.json"
+      },
+      {
+        "command": "nodeModulesVersions.revealInExplorer",
+        "title": "Reveal in Explorer"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "nodeModulesVersions.search",
+          "when": "view == nodeModulesVersions",
+          "group": "navigation"
+        },
+        {
+          "command": "nodeModulesVersions.refresh",
+          "when": "view == nodeModulesVersions",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "nodeModulesVersions.openPackageJson",
+          "when": "view == nodeModulesVersions && viewItem == nodeModule",
+          "group": "inline"
+        },
+        {
+          "command": "nodeModulesVersions.revealInExplorer",
+          "when": "view == nodeModulesVersions && viewItem == nodeModule"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "nodeModulesVersions.search",
+        "key": "cmd+f",
+        "mac": "cmd+f",
+        "when": "focusedView == nodeModulesVersions"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "@types/vscode": "^1.107.0",
+    "@vscode/vsce": "^3.2.2",
+    "typescript": "^5.9.3"
+  }
+}
