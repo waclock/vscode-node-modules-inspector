@@ -18,6 +18,7 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 - **Multi-root Support**: Works with monorepos and projects with multiple `node_modules` folders
 - **Quick Search**: Press `Cmd+F` (Mac) or `Ctrl+F` (Windows/Linux) to search all packages
 - **Click to Navigate**: Click any package to open its `package.json` and reveal it in the Explorer
+- **Open in npm Registry**: Right-click to open packages in npmjs.com or your custom internal registry (configurable)
 
 ## Usage
 
@@ -53,10 +54,42 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 
 ## Extension Settings
 
-This extension contributes the following commands:
+This extension contributes the following settings:
+
+- `nodeModulesInspector.registries`: Custom npm registries for "Open in npm" (see below)
+- `nodeModulesInspector.fallbackToNpmjs`: Fall back to npmjs.com if no custom registry matches (default: `true`)
+- `nodeModulesInspector.alwaysShowNpmjs`: Always show npmjs.com as an option alongside custom registries (default: `false`)
+
+### Configuring Custom Registries
+
+For internal/private registries (like Artifactory, Verdaccio, or Nexus), add to your VS Code settings:
+
+```json
+{
+  "nodeModulesInspector.registries": [
+    {
+      "name": "Internal Registry",
+      "urlPattern": "https://npm.mycompany.com/package/{package}/",
+      "scopePatterns": ["@mycompany/*", "@internal/*"]
+    }
+  ]
+}
+```
+
+**URL Pattern placeholders:**
+- `{package}`: Full package name (e.g., `@scope/name` or `lodash`)
+- `{scope}`: Just the scope (e.g., `@scope`)
+- `{name}`: Just the package name without scope (e.g., `name`)
+
+**Scope patterns:**
+- Use `@scope/*` to match all packages under a scope
+- Leave empty `[]` to match all packages
+
+### Commands
 
 - `nodeModulesVersions.refresh`: Refresh the package list
 - `nodeModulesVersions.search`: Search packages
+- `nodeModulesVersions.openInNpm`: Open package in npm registry
 
 ## Known Issues
 

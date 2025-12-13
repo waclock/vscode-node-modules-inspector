@@ -530,6 +530,100 @@ class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
   }
 }
 
+// Configuration interfaces
+interface RegistryConfig {
+  name: string;
+  urlPattern: string;
+  scopePatterns?: string[];
+}
+
+interface RegistryUrl {
+  name: string;
+  url: string;
+}
+
+function getPackageNameFromInstance(item: PackageInstanceItem): string | undefined {
+  // Extract package name from the path
+  const pathParts = item.instance.packagePath.split('/node_modules/');
+  if (pathParts.length > 0) {
+    const lastPart = pathParts[pathParts.length - 1];
+    // Handle scoped packages
+    if (lastPart.startsWith('@')) {
+      const parts = lastPart.split('/');
+      if (parts.length >= 2) {
+        return `${parts[0]}/${parts[1]}`;
+      }
+    }
+    return lastPart.split('/')[0];
+  }
+  return undefined;
+}
+
+function matchesScope(packageName: string, scopePatterns: string[]): boolean {
+  if (scopePatterns.length === 0) return true;
+
+  for (const pattern of scopePatterns) {
+    if (pattern.endsWith('/*')) {
+      const scope = pattern.slice(0, -2);
+      if (packageName.startsWith(scope + '/')) return true;
+    } else if (pattern === packageName) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function buildRegistryUrl(packageName: string, urlPattern: string): string {
+  // Handle scoped packages: @scope/name
+  if (packageName.startsWith('@')) {
+    const [scope, name] = packageName.split('/');
+    return urlPattern
+      .replace(/{package}/g, packageName)
+      .replace(/{scope}/g, scope)
+      .replace(/{name}/g, name);
+  }
+  return urlPattern
+    .replace(/{package}/g, packageName)
+    .replace(/{scope}/g, '')
+    .replace(/{name}/g, packageName);
+}
+
+function getRegistryUrls(packageName: string): RegistryUrl[] {
+  const config = vscode.workspace.getConfiguration('nodeModulesInspector');
+  const registries: RegistryConfig[] = config.get('registries', []);
+  const fallbackToNpmjs: boolean = config.get('fallbackToNpmjs', true);
+  const alwaysShowNpmjs: boolean = config.get('alwaysShowNpmjs', false);
+
+  const urls: RegistryUrl[] = [];
+  let matchedCustomRegistry = false;
+
+  // Check custom registries
+  for (const registry of registries) {
+    const scopePatterns = registry.scopePatterns || [];
+    if (matchesScope(packageName, scopePatterns)) {
+      matchedCustomRegistry = true;
+      urls.push({
+        name: registry.name,
+        url: buildRegistryUrl(packageName, registry.urlPattern)
+      });
+    }
+  }
+
+  // Add npmjs.com
+  const npmjsUrl = packageName.startsWith('@')
+    ? `https://www.npmjs.com/package/${packageName}`
+    : `https://www.npmjs.com/package/${packageName}`;
+
+  if (alwaysShowNpmjs || (fallbackToNpmjs && !matchedCustomRegistry)) {
+    urls.push({
+      name: 'npmjs.com',
+      url: npmjsUrl
+    });
+  }
+
+  return urls;
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const nodeModulesProvider = new NodeModulesProvider();
 
@@ -605,6 +699,34 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
   context.subscriptions.push(revealCommand);
+
+  const openInNpmCommand = vscode.commands.registerCommand(
+    'nodeModulesVersions.openInNpm',
+    async (item: PackageGroupItem | PackageInstanceItem) => {
+      const packageName = item.type === 'group' ? item.packageName : getPackageNameFromInstance(item);
+      if (!packageName) return;
+
+      const urls = getRegistryUrls(packageName);
+
+      if (urls.length === 0) {
+        vscode.window.showWarningMessage(`No registry configured for package: ${packageName}`);
+        return;
+      }
+
+      if (urls.length === 1) {
+        vscode.env.openExternal(vscode.Uri.parse(urls[0].url));
+      } else {
+        const picked = await vscode.window.showQuickPick(
+          urls.map(u => ({ label: u.name, url: u.url })),
+          { placeHolder: `Open ${packageName} in...` }
+        );
+        if (picked) {
+          vscode.env.openExternal(vscode.Uri.parse(picked.url));
+        }
+      }
+    }
+  );
+  context.subscriptions.push(openInNpmCommand);
 
   const watcher = vscode.workspace.createFileSystemWatcher('**/node_modules/**/package.json');
   watcher.onDidChange(() => nodeModulesProvider.refresh());

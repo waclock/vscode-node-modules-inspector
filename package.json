@@ -8,9 +8,8 @@
     "type": "git",
     "url": "https://github.com/waclock/vscode-node-modules-inspector"
   },
-  "icon": "icon.png",
-  "engines": {
-    "vscode": "^1.74.0"
+    "engines": {
+    "vscode": "^1.107.0"
   },
   "categories": [
     "Other",
@@ -55,8 +54,52 @@
       {
         "command": "nodeModulesVersions.revealInExplorer",
         "title": "Reveal in Explorer"
+      },
+      {
+        "command": "nodeModulesVersions.openInNpm",
+        "title": "Open in npm Registry",
+        "icon": "$(link-external)"
       }
     ],
+    "configuration": {
+      "title": "Node Modules Inspector",
+      "properties": {
+        "nodeModulesInspector.registries": {
+          "type": "array",
+          "default": [],
+          "description": "Custom npm registries to use for 'Open in npm' (checked in order). Each entry should have 'name', 'urlPattern', and optionally 'scopePatterns' to match specific package scopes.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name for this registry"
+              },
+              "urlPattern": {
+                "type": "string",
+                "description": "URL pattern with {package} placeholder. For scoped packages, {scope} and {name} are also available. Example: https://npm.mycompany.com/{package}/"
+              },
+              "scopePatterns": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Package scope patterns to match (e.g., '@mycompany/*', '@internal/*'). If empty, matches all packages."
+              }
+            },
+            "required": ["name", "urlPattern"]
+          }
+        },
+        "nodeModulesInspector.fallbackToNpmjs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fall back to npmjs.com if no custom registry matches the package"
+        },
+        "nodeModulesInspector.alwaysShowNpmjs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Always show npmjs.com as an option alongside custom registries"
+        }
+      }
+    },
     "menus": {
       "view/title": [
         {
@@ -78,7 +121,13 @@
         },
         {
           "command": "nodeModulesVersions.revealInExplorer",
-          "when": "view == nodeModulesVersions && viewItem == nodeModule"
+          "when": "view == nodeModulesVersions && viewItem == nodeModule",
+          "group": "navigation"
+        },
+        {
+          "command": "nodeModulesVersions.openInNpm",
+          "when": "view == nodeModulesVersions && (viewItem == nodeModule || viewItem == packageGroup)",
+          "group": "navigation"
         }
       ]
     },
@@ -95,7 +144,8 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/node": "^25.0.1",
