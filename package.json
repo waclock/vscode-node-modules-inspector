@@ -2,7 +2,7 @@
   "name": "node-modules-inspector",
   "displayName": "Node Modules Inspector",
   "description": "Inspect node_modules with version info, dependency classification, and smart grouping for monorepos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "waclock",
   "repository": {
     "type": "git",
@@ -126,13 +126,17 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test": "npm run compile && mocha out/test/**/*.test.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^25.0.1",
     "@types/vscode": "^1.100.0",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.2.2",
+    "mocha": "^11.7.5",
     "typescript": "^5.9.3"
   }
 }
