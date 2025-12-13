@@ -2,14 +2,15 @@
   "name": "node-modules-inspector",
   "displayName": "Node Modules Inspector",
   "description": "Inspect node_modules with version info, dependency classification, and smart grouping for monorepos",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "publisher": "waclock",
   "repository": {
     "type": "git",
     "url": "https://github.com/waclock/vscode-node-modules-inspector"
   },
-    "engines": {
-    "vscode": "^1.107.0"
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Other",
@@ -64,39 +65,20 @@
     "configuration": {
       "title": "Node Modules Inspector",
       "properties": {
-        "nodeModulesInspector.registries": {
-          "type": "array",
-          "default": [],
-          "description": "Custom npm registries to use for 'Open in npm' (checked in order). Each entry should have 'name', 'urlPattern', and optionally 'scopePatterns' to match specific package scopes.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Display name for this registry"
-              },
-              "urlPattern": {
-                "type": "string",
-                "description": "URL pattern with {package} placeholder. For scoped packages, {scope} and {name} are also available. Example: https://npm.mycompany.com/{package}/"
-              },
-              "scopePatterns": {
-                "type": "array",
-                "items": { "type": "string" },
-                "description": "Package scope patterns to match (e.g., '@mycompany/*', '@internal/*'). If empty, matches all packages."
-              }
+        "nodeModulesInspector.primaryRegistry": {
+          "type": "object",
+          "default": null,
+          "description": "Primary npm registry to try first for 'Open in npm'. Falls back to npmjs.com if not configured or package not found.",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Display name for this registry (e.g., 'Internal Registry')"
             },
-            "required": ["name", "urlPattern"]
+            "urlPattern": {
+              "type": "string",
+              "description": "URL pattern with {package} placeholder. Example: https://npm.mycompany.com/{package}/"
+            }
           }
-        },
-        "nodeModulesInspector.fallbackToNpmjs": {
-          "type": "boolean",
-          "default": true,
-          "description": "Fall back to npmjs.com if no custom registry matches the package"
-        },
-        "nodeModulesInspector.alwaysShowNpmjs": {
-          "type": "boolean",
-          "default": false,
-          "description": "Always show npmjs.com as an option alongside custom registries"
         }
       }
     },
@@ -149,7 +131,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.1",
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.100.0",
     "@vscode/vsce": "^3.2.2",
     "typescript": "^5.9.3"
   }

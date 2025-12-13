@@ -531,10 +531,9 @@ class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
 }
 
 // Configuration interfaces
-interface RegistryConfig {
+interface PrimaryRegistry {
   name: string;
   urlPattern: string;
-  scopePatterns?: string[];
 }
 
 interface RegistryUrl {
@@ -559,67 +558,40 @@ function getPackageNameFromInstance(item: PackageInstanceItem): string | undefin
   return undefined;
 }
 
-function matchesScope(packageName: string, scopePatterns: string[]): boolean {
-  if (scopePatterns.length === 0) return true;
-
-  for (const pattern of scopePatterns) {
-    if (pattern.endsWith('/*')) {
-      const scope = pattern.slice(0, -2);
-      if (packageName.startsWith(scope + '/')) return true;
-    } else if (pattern === packageName) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function buildRegistryUrl(packageName: string, urlPattern: string): string {
   // Handle scoped packages: @scope/name
   if (packageName.startsWith('@')) {
     const [scope, name] = packageName.split('/');
     return urlPattern
-      .replace(/{package}/g, packageName)
-      .replace(/{scope}/g, scope)
-      .replace(/{name}/g, name);
+      .replace(/{package}/g, encodeURIComponent(packageName))
+      .replace(/{scope}/g, encodeURIComponent(scope))
+      .replace(/{name}/g, encodeURIComponent(name));
   }
   return urlPattern
-    .replace(/{package}/g, packageName)
+    .replace(/{package}/g, encodeURIComponent(packageName))
     .replace(/{scope}/g, '')
-    .replace(/{name}/g, packageName);
+    .replace(/{name}/g, encodeURIComponent(packageName));
 }
 
 function getRegistryUrls(packageName: string): RegistryUrl[] {
   const config = vscode.workspace.getConfiguration('nodeModulesInspector');
-  const registries: RegistryConfig[] = config.get('registries', []);
-  const fallbackToNpmjs: boolean = config.get('fallbackToNpmjs', true);
-  const alwaysShowNpmjs: boolean = config.get('alwaysShowNpmjs', false);
+  const primaryRegistry = config.get<PrimaryRegistry | null>('primaryRegistry', null);
 
   const urls: RegistryUrl[] = [];
-  let matchedCustomRegistry = false;
 
-  // Check custom registries
-  for (const registry of registries) {
-    const scopePatterns = registry.scopePatterns || [];
-    if (matchesScope(packageName, scopePatterns)) {
-      matchedCustomRegistry = true;
-      urls.push({
-        name: registry.name,
-        url: buildRegistryUrl(packageName, registry.urlPattern)
-      });
-    }
-  }
-
-  // Add npmjs.com
-  const npmjsUrl = packageName.startsWith('@')
-    ? `https://www.npmjs.com/package/${packageName}`
-    : `https://www.npmjs.com/package/${packageName}`;
-
-  if (alwaysShowNpmjs || (fallbackToNpmjs && !matchedCustomRegistry)) {
+  // Add primary registry if configured
+  if (primaryRegistry?.name && primaryRegistry?.urlPattern) {
     urls.push({
-      name: 'npmjs.com',
-      url: npmjsUrl
+      name: primaryRegistry.name,
+      url: buildRegistryUrl(packageName, primaryRegistry.urlPattern)
     });
   }
+
+  // Always add npmjs.com as fallback
+  urls.push({
+    name: 'npmjs.com',
+    url: `https://www.npmjs.com/package/${encodeURIComponent(packageName)}`
+  });
 
   return urls;
 }

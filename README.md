@@ -2,6 +2,10 @@
 
 A VS Code extension that provides a powerful, organized view of your `node_modules` dependencies with version information, dependency classification, and smart grouping.
 
+![Node Modules Inspector Demo](demo.gif)
+
+![Screenshot](screenshot.png)
+
 ## Features
 
 - **Unified Package View**: All instances of each package grouped together, regardless of where they're installed
@@ -23,7 +27,7 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 ## Usage
 
 1. Open a project with `node_modules`
-2. Find the **"Node Modules"** panel in the Explorer sidebar
+2. Find the **"Node Modules Explorer"** panel in the Explorer sidebar
 3. Browse packages or use the search icon to find specific packages
 4. Hover over items for detailed information about dependency type and location
 5. Click to open `package.json` files
@@ -49,41 +53,34 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 
 ## Requirements
 
-- VS Code 1.74.0 or higher
+- VS Code 1.100.0 or higher
 - A project with `node_modules`
 
 ## Extension Settings
 
 This extension contributes the following settings:
 
-- `nodeModulesInspector.registries`: Custom npm registries for "Open in npm" (see below)
-- `nodeModulesInspector.fallbackToNpmjs`: Fall back to npmjs.com if no custom registry matches (default: `true`)
-- `nodeModulesInspector.alwaysShowNpmjs`: Always show npmjs.com as an option alongside custom registries (default: `false`)
+- `nodeModulesInspector.primaryRegistry`: Configure a primary npm registry for "Open in npm" (falls back to npmjs.com)
 
-### Configuring Custom Registries
+### Configuring a Custom Registry
 
-For internal/private registries (like Artifactory, Verdaccio, or Nexus), add to your VS Code settings:
+For internal/private registries (like Artifactory, Verdaccio, or Nexus), add to your VS Code **User Settings** (so it applies to all projects):
 
 ```json
 {
-  "nodeModulesInspector.registries": [
-    {
-      "name": "Internal Registry",
-      "urlPattern": "https://npm.mycompany.com/package/{package}/",
-      "scopePatterns": ["@mycompany/*", "@internal/*"]
-    }
-  ]
+  "nodeModulesInspector.primaryRegistry": {
+    "name": "Internal Registry",
+    "urlPattern": "https://npm.mycompany.com/package/{package}/"
+  }
 }
 ```
+
+> **Note:** When you right-click a package and select "Open in npm Registry", your primary registry is listed first, with npmjs.com as a fallback. This is useful if your internal registry mirrors public packages - you can check your internal registry first, then fall back to npmjs.com if needed.
 
 **URL Pattern placeholders:**
 - `{package}`: Full package name (e.g., `@scope/name` or `lodash`)
 - `{scope}`: Just the scope (e.g., `@scope`)
 - `{name}`: Just the package name without scope (e.g., `name`)
-
-**Scope patterns:**
-- Use `@scope/*` to match all packages under a scope
-- Leave empty `[]` to match all packages
 
 ### Commands
 
