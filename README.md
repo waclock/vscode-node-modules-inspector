@@ -1,6 +1,6 @@
 # Node Modules Inspector
 
-A VS Code extension that provides a powerful, organized view of your `node_modules` dependencies with version information, dependency classification, and smart grouping.
+A VS Code extension that provides a powerful, organized view of your `node_modules` dependencies with version information, package sizes, module type detection, and smart grouping.
 
 ![Node Modules Inspector Demo](demo.gif)
 
@@ -9,7 +9,9 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 ## Features
 
 - **Unified Package View**: All instances of each package grouped together, regardless of where they're installed
-- **Version Conflict Detection**: Easily spot when the same package has multiple versions installed (highlighted in yellow)
+- **Version Conflict Detection**: Easily spot when the same package has multiple versions installed
+- **Package Size Display**: See the size of each package and total size across all instances
+- **Module Type Detection**: Identify whether packages use ESM, CommonJS, or both (ESM+CJS)
 - **Dependency Classification**:
   - **Direct** (green): Listed in your `dependencies`
   - **Dev** (blue): Listed in your `devDependencies`
@@ -19,37 +21,35 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
   - **Hoisted**: At the top-level `node_modules`
   - **Nested**: Inside another package (version conflict)
   - **Workspace**: In a monorepo sub-package
+- **Filtering**:
+  - **Duplicates Only**: Toggle to show only packages with multiple versions
+  - **Exclude Patterns**: Configure glob patterns to hide packages (e.g., `@types/*`)
 - **Multi-root Support**: Works with monorepos and projects with multiple `node_modules` folders
 - **Quick Search**: Press `Cmd+F` (Mac) or `Ctrl+F` (Windows/Linux) to search all packages
 - **Click to Navigate**: Click any package to open its `package.json` and reveal it in the Explorer
-- **Open in npm Registry**: Right-click to open packages in npmjs.com or your custom internal registry (configurable)
+- **Open in npm Registry**: Right-click to open packages in npmjs.com or your custom internal registry
 
 ## Usage
 
 1. Open a project with `node_modules`
-2. Find the **"Node Modules Explorer"** panel in the Explorer sidebar
+2. Find the **"Node Modules Inspector"** panel in the Explorer sidebar
 3. Browse packages or use the search icon to find specific packages
-4. Hover over items for detailed information about dependency type and location
-5. Click to open `package.json` files
+4. Use the filter icon to show only packages with multiple versions
+5. Hover over items for detailed information
+6. Click to open `package.json` files
 
-## Icon Legend
+## What You'll See
 
-### Package Level
-| Icon | Meaning |
-|------|---------|
-| 📦 (green) | Direct dependency |
-| 📦 (blue) | Dev dependency |
-| 📦 (gray) | Transitive dependency |
-| 🔀 (yellow) | Multiple versions installed |
+**Top-level packages show:**
+- Package name
+- Version (or multiple versions if conflicts exist)
+- Number of instances in parentheses
 
-### Instance Level
-| Icon | Color | Meaning |
-|------|-------|---------|
-| → | Green | Direct dependency |
-| 🔧 | Blue | Dev dependency |
-| 🔗 | Purple | Peer dependency |
-| ⎇ | Gray | Transitive dependency |
-| ⤷ | Yellow | Nested (version conflict) |
+**Expanded instances show:**
+- Location (root, workspace path, or nested path)
+- Version
+- Module type (ESM, CJS, or ESM+CJS)
+- Package size
 
 ## Requirements
 
@@ -58,13 +58,12 @@ A VS Code extension that provides a powerful, organized view of your `node_modul
 
 ## Extension Settings
 
-This extension contributes the following settings:
-
-- `nodeModulesInspector.primaryRegistry`: Configure a primary npm registry for "Open in npm" (falls back to npmjs.com)
+- `nodeModulesInspector.primaryRegistry`: Configure a primary npm registry for "Open in npm"
+- `nodeModulesInspector.excludePatterns`: Glob patterns for packages to hide from the view
 
 ### Configuring a Custom Registry
 
-For internal/private registries (like Artifactory, Verdaccio, or Nexus), add to your VS Code **User Settings** (so it applies to all projects):
+For internal/private registries, add to your VS Code settings:
 
 ```json
 {
@@ -75,18 +74,31 @@ For internal/private registries (like Artifactory, Verdaccio, or Nexus), add to 
 }
 ```
 
-> **Note:** When you right-click a package and select "Open in npm Registry", your primary registry is listed first, with npmjs.com as a fallback. This is useful if your internal registry mirrors public packages - you can check your internal registry first, then fall back to npmjs.com if needed.
-
 **URL Pattern placeholders:**
 - `{package}`: Full package name (e.g., `@scope/name` or `lodash`)
 - `{scope}`: Just the scope (e.g., `@scope`)
-- `{name}`: Just the package name without scope (e.g., `name`)
+- `{name}`: Just the package name without scope
 
-### Commands
+### Excluding Packages
 
-- `nodeModulesVersions.refresh`: Refresh the package list
-- `nodeModulesVersions.search`: Search packages
-- `nodeModulesVersions.openInNpm`: Open package in npm registry
+Hide noisy packages from the view:
+
+```json
+{
+  "nodeModulesInspector.excludePatterns": [
+    "@types/*",
+    "eslint-*"
+  ]
+}
+```
+
+## Commands
+
+- **Refresh**: Refresh the package list
+- **Search Packages**: Search all packages (`Cmd+F` / `Ctrl+F`)
+- **Toggle Duplicates Only**: Show only packages with multiple versions
+- **Clear Filters**: Reset all active filters
+- **Open in npm Registry**: Open package in configured registry
 
 ## Known Issues
 
@@ -94,15 +106,27 @@ None yet! Please report issues on GitHub.
 
 ## Release Notes
 
+### 1.3.0
+
+- Package size display
+- Module type detection (ESM/CJS/ESM+CJS)
+- Filter by duplicates only
+- Exclude patterns setting
+- Improved inline metadata display
+
+### 1.2.0
+
+- Code refactoring into modular files
+- Unit test coverage
+
 ### 1.0.0
 
 Initial release:
 - Package grouping by name
-- Dependency type detection (direct/dev/peer/transitive)
-- Location type detection (hoisted/nested/workspace)
+- Dependency type detection
+- Location type detection
 - Multi-root workspace support
 - Search functionality
-- Click to open package.json
 
 ## Contributing
 

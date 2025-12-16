@@ -25,7 +25,7 @@ export class PackageGroupItem extends vscode.TreeItem {
     );
 
     this.hasVersionConflict = hasConflict;
-    this.description = buildVersionDescription(versions, instances.length, hasConflict);
+    this.description = this.buildDescription(instances, hasConflict);
     this.contextValue = this.buildContextValue(hasMultiple, hasConflict);
     this.iconPath = this.buildIcon(instances, hasConflict);
     this.tooltip = this.buildTooltip(packageName, instances, hasConflict);
@@ -39,6 +39,19 @@ export class PackageGroupItem extends vscode.TreeItem {
     }
   }
 
+  private buildDescription(instances: PackageInstance[], hasConflict: boolean): string {
+    const versions = getUniqueVersions(instances.map(i => i.version));
+
+    if (versions.length === 1) {
+      if (instances.length > 1) {
+        return `${versions[0]} (${instances.length})`;
+      }
+      return versions[0];
+    }
+
+    return `${versions.join(', ')} (${instances.length})`;
+  }
+
   private buildContextValue(hasMultiple: boolean, hasVersionConflict: boolean): string {
     if (hasVersionConflict) {
       return 'packageGroupConflict';
@@ -49,8 +62,8 @@ export class PackageGroupItem extends vscode.TreeItem {
   private buildIcon(instances: PackageInstance[], hasVersionConflict: boolean): vscode.ThemeIcon {
     const primaryInstance = instances[0];
     if (hasVersionConflict) {
-      // Red warning icon for version conflicts
-      return new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.red'));
+      // Subtle indicator for multiple versions (not a warning - this is normal with deduping)
+      return new vscode.ThemeIcon('versions', new vscode.ThemeColor('charts.yellow'));
     } else if (primaryInstance.dependencyType === DependencyType.Direct) {
       return new vscode.ThemeIcon('package', new vscode.ThemeColor('charts.green'));
     } else if (primaryInstance.dependencyType === DependencyType.Dev) {
@@ -65,12 +78,12 @@ export class PackageGroupItem extends vscode.TreeItem {
     // Calculate total size across all instances
     const totalSize = instances.reduce((sum, inst) => sum + (inst.size || 0), 0);
     if (totalSize > 0) {
-      lines.push(`📦 Total size: ${formatBytes(totalSize)}`);
+      lines.push(`Total size: ${formatBytes(totalSize)}`);
     }
 
     if (hasVersionConflict) {
       const versions = getUniqueVersions(instances.map(i => i.version));
-      lines.push(`⚠️ VERSION CONFLICT: ${versions.length} different versions installed`);
+      lines.push(`${versions.length} versions installed`);
     }
 
     lines.push('');
@@ -98,7 +111,7 @@ export class PackageInstanceItem extends vscode.TreeItem {
     public readonly workspaceRoot: string
   ) {
     super(instance.resolvedAt, vscode.TreeItemCollapsibleState.None);
-    this.description = `[${instance.version}]`;
+    this.description = this.buildDescription(instance);
     this.contextValue = 'nodeModule';
     this.tooltip = this.buildTooltip(instance);
     this.iconPath = this.buildIcon(instance);
@@ -108,6 +121,12 @@ export class PackageInstanceItem extends vscode.TreeItem {
       title: 'Show Source',
       arguments: [this]
     };
+  }
+
+  private buildDescription(instance: PackageInstance): string {
+    const modInfo = MODULE_TYPE_INFO[instance.moduleType];
+    const sizeStr = instance.size ? ` • ${formatBytes(instance.size)}` : '';
+    return `${instance.version} • ${modInfo.label}${sizeStr}`;
   }
 
   private buildTooltip(instance: PackageInstance): vscode.MarkdownString {

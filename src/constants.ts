@@ -70,7 +70,7 @@ export const MODULE_TYPE_INFO: Record<ModuleType, TypeInfo> = {
   [ModuleType.Dual]: {
     icon: 'layers',
     color: 'charts.purple',
-    label: 'Dual',
+    label: 'ESM+CJS',
     description: 'Supports both ESM and CommonJS'
   },
   [ModuleType.Unknown]: {
