@@ -3,7 +3,10 @@ import {
   getDependencyType,
   getLocationType,
   formatResolvedPath,
-  extractPackageNameFromPath
+  extractPackageNameFromPath,
+  getUniqueVersions,
+  hasVersionConflict,
+  buildVersionDescription
 } from '../utils';
 import { DependencyType, LocationType } from '../types';
 
@@ -133,6 +136,69 @@ describe('Utils', () => {
     it('should return empty string for empty paths', () => {
       // Empty string split returns [''], and lastPart.split('/')[0] returns ''
       assert.strictEqual(extractPackageNameFromPath(''), '');
+    });
+  });
+
+  describe('getUniqueVersions', () => {
+    it('should return unique versions from array', () => {
+      assert.deepStrictEqual(getUniqueVersions(['1.0.0', '2.0.0', '1.0.0']), ['1.0.0', '2.0.0']);
+    });
+
+    it('should preserve order of first occurrence', () => {
+      assert.deepStrictEqual(getUniqueVersions(['2.0.0', '1.0.0', '2.0.0']), ['2.0.0', '1.0.0']);
+    });
+
+    it('should return single version for identical versions', () => {
+      assert.deepStrictEqual(getUniqueVersions(['1.0.0', '1.0.0', '1.0.0']), ['1.0.0']);
+    });
+
+    it('should handle empty array', () => {
+      assert.deepStrictEqual(getUniqueVersions([]), []);
+    });
+
+    it('should handle single version', () => {
+      assert.deepStrictEqual(getUniqueVersions(['1.0.0']), ['1.0.0']);
+    });
+  });
+
+  describe('hasVersionConflict', () => {
+    it('should return true for multiple different versions', () => {
+      assert.strictEqual(hasVersionConflict(['1.0.0', '2.0.0']), true);
+      assert.strictEqual(hasVersionConflict(['1.0.0', '2.0.0', '3.0.0']), true);
+    });
+
+    it('should return false for same versions', () => {
+      assert.strictEqual(hasVersionConflict(['1.0.0', '1.0.0']), false);
+      assert.strictEqual(hasVersionConflict(['1.0.0', '1.0.0', '1.0.0']), false);
+    });
+
+    it('should return false for single version', () => {
+      assert.strictEqual(hasVersionConflict(['1.0.0']), false);
+    });
+
+    it('should return false for empty array', () => {
+      assert.strictEqual(hasVersionConflict([]), false);
+    });
+  });
+
+  describe('buildVersionDescription', () => {
+    it('should show single version without location count for one instance', () => {
+      assert.strictEqual(buildVersionDescription(['1.0.0'], 1, false), '[1.0.0]');
+    });
+
+    it('should show single version with location count for multiple instances', () => {
+      assert.strictEqual(buildVersionDescription(['1.0.0', '1.0.0'], 2, false), '[1.0.0] (2 locations)');
+    });
+
+    it('should show warning with versions separated by arrow for conflicts', () => {
+      assert.strictEqual(buildVersionDescription(['1.0.0', '2.0.0'], 2, true), '⚠ [1.0.0 ↔ 2.0.0]');
+    });
+
+    it('should show all unique versions for multiple conflicts', () => {
+      assert.strictEqual(
+        buildVersionDescription(['1.0.0', '2.0.0', '3.0.0', '1.0.0'], 4, true),
+        '⚠ [1.0.0 ↔ 2.0.0 ↔ 3.0.0]'
+      );
     });
   });
 });

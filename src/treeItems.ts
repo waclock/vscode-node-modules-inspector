@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import { PackageInstance, DependencyType, LocationType } from './types';
 import { DEPENDENCY_TYPE_INFO, LOCATION_TYPE_INFO } from './constants';
+import { getUniqueVersions, hasVersionConflict as checkVersionConflict, buildVersionDescription } from './utils';
 
 export type TreeItem = PackageGroupItem | PackageInstanceItem;
 
 export class PackageGroupItem extends vscode.TreeItem {
   readonly type = 'group' as const;
+
+  public readonly hasVersionConflict: boolean;
 
   constructor(
     public readonly packageName: string,
@@ -13,17 +16,19 @@ export class PackageGroupItem extends vscode.TreeItem {
     public readonly workspaceRoot: string
   ) {
     const hasMultiple = instances.length > 1;
-    const hasMultipleVersions = new Set(instances.map(i => i.version)).size > 1;
+    const versions = instances.map(i => i.version);
+    const hasConflict = checkVersionConflict(versions);
 
     super(packageName, hasMultiple
       ? vscode.TreeItemCollapsibleState.Collapsed
       : vscode.TreeItemCollapsibleState.None
     );
 
-    this.description = this.buildDescription(instances, hasMultiple);
-    this.contextValue = hasMultiple ? 'packageGroup' : 'nodeModule';
-    this.iconPath = this.buildIcon(instances, hasMultipleVersions);
-    this.tooltip = this.buildTooltip(packageName, instances);
+    this.hasVersionConflict = hasConflict;
+    this.description = buildVersionDescription(versions, instances.length, hasConflict);
+    this.contextValue = this.buildContextValue(hasMultiple, hasConflict);
+    this.iconPath = this.buildIcon(instances, hasConflict);
+    this.tooltip = this.buildTooltip(packageName, instances, hasConflict);
 
     if (!hasMultiple) {
       this.command = {
@@ -34,22 +39,18 @@ export class PackageGroupItem extends vscode.TreeItem {
     }
   }
 
-  private buildDescription(instances: PackageInstance[], hasMultiple: boolean): string {
-    const versions = [...new Set(instances.map(i => i.version))];
-    if (versions.length === 1) {
-      let desc = `[${versions[0]}]`;
-      if (hasMultiple) {
-        desc += ` (${instances.length} locations)`;
-      }
-      return desc;
+  private buildContextValue(hasMultiple: boolean, hasVersionConflict: boolean): string {
+    if (hasVersionConflict) {
+      return 'packageGroupConflict';
     }
-    return `[${versions.join(', ')}] (${instances.length} locations)`;
+    return hasMultiple ? 'packageGroup' : 'nodeModule';
   }
 
-  private buildIcon(instances: PackageInstance[], hasMultipleVersions: boolean): vscode.ThemeIcon {
+  private buildIcon(instances: PackageInstance[], hasVersionConflict: boolean): vscode.ThemeIcon {
     const primaryInstance = instances[0];
-    if (hasMultipleVersions) {
-      return new vscode.ThemeIcon('versions', new vscode.ThemeColor('charts.yellow'));
+    if (hasVersionConflict) {
+      // Red warning icon for version conflicts
+      return new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.red'));
     } else if (primaryInstance.dependencyType === DependencyType.Direct) {
       return new vscode.ThemeIcon('package', new vscode.ThemeColor('charts.green'));
     } else if (primaryInstance.dependencyType === DependencyType.Dev) {
@@ -58,8 +59,15 @@ export class PackageGroupItem extends vscode.TreeItem {
     return new vscode.ThemeIcon('package');
   }
 
-  private buildTooltip(packageName: string, instances: PackageInstance[]): string {
-    const lines = [packageName, ''];
+  private buildTooltip(packageName: string, instances: PackageInstance[], hasVersionConflict: boolean): string {
+    const lines = [packageName];
+
+    if (hasVersionConflict) {
+      const versions = getUniqueVersions(instances.map(i => i.version));
+      lines.push(`⚠️ VERSION CONFLICT: ${versions.length} different versions installed`);
+    }
+
+    lines.push('');
     for (const inst of instances) {
       const depInfo = DEPENDENCY_TYPE_INFO[inst.dependencyType];
       const locInfo = LOCATION_TYPE_INFO[inst.locationType];
@@ -89,7 +97,7 @@ export class PackageInstanceItem extends vscode.TreeItem {
 
     this.command = {
       command: 'nodeModulesVersions.openPackageJson',
-      title: 'Open package.json',
+      title: 'Show Source',
       arguments: [this]
     };
   }

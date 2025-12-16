@@ -86,3 +86,42 @@ export function extractPackageNameFromPath(packagePath: string): string | undefi
   }
   return undefined;
 }
+
+/**
+ * Gets unique versions from an array of version strings
+ */
+export function getUniqueVersions(versions: string[]): string[] {
+  return [...new Set(versions)];
+}
+
+/**
+ * Checks if there's a version conflict (multiple different versions)
+ */
+export function hasVersionConflict(versions: string[]): boolean {
+  return getUniqueVersions(versions).length > 1;
+}
+
+/**
+ * Builds a description string for version display
+ * @param versions Array of version strings
+ * @param locationCount Number of locations where the package is installed
+ * @param hasConflict Whether there's a version conflict
+ */
+export function buildVersionDescription(
+  versions: string[],
+  locationCount: number,
+  hasConflict: boolean
+): string {
+  const uniqueVersions = getUniqueVersions(versions);
+
+  if (uniqueVersions.length === 1) {
+    let desc = `[${uniqueVersions[0]}]`;
+    if (locationCount > 1) {
+      desc += ` (${locationCount} locations)`;
+    }
+    return desc;
+  }
+
+  // Version conflict - show warning indicator
+  return `⚠ [${uniqueVersions.join(' ↔ ')}]`;
+}
