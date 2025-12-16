@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PackageJson, PackageInstance, PackageJsonCache, LocationType, PackageSearchResult } from './types';
-import { getDependencyType, getLocationType, formatResolvedPath, calculateDirectorySize } from './utils';
+import { getDependencyType, getLocationType, formatResolvedPath, calculateDirectorySize, isPackageExcluded, hasVersionConflict } from './utils';
 import { TreeItem, PackageGroupItem, PackageInstanceItem } from './treeItems';
 
 export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -15,6 +15,27 @@ export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
   private directDeps: Set<string> = new Set();
   private devDeps: Set<string> = new Set();
   private peerDeps: Set<string> = new Set();
+
+  // Filter state
+  private _showDuplicatesOnly: boolean = false;
+
+  get showDuplicatesOnly(): boolean {
+    return this._showDuplicatesOnly;
+  }
+
+  toggleDuplicatesOnly(): void {
+    this._showDuplicatesOnly = !this._showDuplicatesOnly;
+    this._onDidChangeTreeData.fire();
+  }
+
+  clearFilters(): void {
+    this._showDuplicatesOnly = false;
+    this._onDidChangeTreeData.fire();
+  }
+
+  hasActiveFilters(): boolean {
+    return this._showDuplicatesOnly;
+  }
 
   refresh(): void {
     this.packageGroups.clear();
@@ -70,13 +91,31 @@ export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
       await this.scanAllNodeModules(this.workspaceRoot);
     }
 
+    // Get exclude patterns from settings
+    const config = vscode.workspace.getConfiguration('nodeModulesInspector');
+    const excludePatterns: string[] = config.get('excludePatterns') || [];
+
     const groups: PackageGroupItem[] = [];
     const sortedNames = [...this.packageGroups.keys()].sort((a, b) =>
       a.toLowerCase().localeCompare(b.toLowerCase())
     );
 
     for (const name of sortedNames) {
+      // Apply exclude patterns
+      if (excludePatterns.length > 0 && isPackageExcluded(name, excludePatterns)) {
+        continue;
+      }
+
       const instances = this.packageGroups.get(name)!;
+
+      // Apply duplicates-only filter
+      if (this._showDuplicatesOnly) {
+        const versions = instances.map(i => i.version);
+        if (!hasVersionConflict(versions)) {
+          continue;
+        }
+      }
+
       groups.push(new PackageGroupItem(name, instances, this.workspaceRoot));
     }
 

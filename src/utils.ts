@@ -172,3 +172,24 @@ export function calculateDirectorySize(dirPath: string): number | null {
     return null;
   }
 }
+
+/**
+ * Simple glob pattern matching for package names
+ * Supports * as wildcard
+ */
+export function matchesGlobPattern(packageName: string, pattern: string): boolean {
+  // Convert glob pattern to regex
+  const regexPattern = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars except *
+    .replace(/\*/g, '.*'); // Convert * to .*
+
+  const regex = new RegExp(`^${regexPattern}$`, 'i');
+  return regex.test(packageName);
+}
+
+/**
+ * Checks if a package name matches any of the given exclude patterns
+ */
+export function isPackageExcluded(packageName: string, excludePatterns: string[]): boolean {
+  return excludePatterns.some(pattern => matchesGlobPattern(packageName, pattern));
+}

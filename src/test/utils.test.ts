@@ -7,7 +7,9 @@ import {
   getUniqueVersions,
   hasVersionConflict,
   buildVersionDescription,
-  formatBytes
+  formatBytes,
+  matchesGlobPattern,
+  isPackageExcluded
 } from '../utils';
 import { DependencyType, LocationType } from '../types';
 
@@ -233,6 +235,59 @@ describe('Utils', () => {
     it('should handle large numbers', () => {
       // Stays at GB even for very large values
       assert.strictEqual(formatBytes(10737418240), '10.0 GB');
+    });
+  });
+
+  describe('matchesGlobPattern', () => {
+    it('should match exact package names', () => {
+      assert.strictEqual(matchesGlobPattern('lodash', 'lodash'), true);
+      assert.strictEqual(matchesGlobPattern('lodash', 'react'), false);
+    });
+
+    it('should match wildcard at end', () => {
+      assert.strictEqual(matchesGlobPattern('eslint-plugin-react', 'eslint-*'), true);
+      assert.strictEqual(matchesGlobPattern('eslint', 'eslint-*'), false);
+    });
+
+    it('should match wildcard at start', () => {
+      assert.strictEqual(matchesGlobPattern('babel-preset-env', '*-env'), true);
+      assert.strictEqual(matchesGlobPattern('babel-preset', '*-env'), false);
+    });
+
+    it('should match scoped packages', () => {
+      assert.strictEqual(matchesGlobPattern('@types/node', '@types/*'), true);
+      assert.strictEqual(matchesGlobPattern('@types/react', '@types/*'), true);
+      assert.strictEqual(matchesGlobPattern('@babel/core', '@types/*'), false);
+    });
+
+    it('should be case insensitive', () => {
+      assert.strictEqual(matchesGlobPattern('Lodash', 'lodash'), true);
+      assert.strictEqual(matchesGlobPattern('LODASH', 'lodash'), true);
+    });
+
+    it('should handle multiple wildcards', () => {
+      assert.strictEqual(matchesGlobPattern('@types/eslint-plugin-react', '@types/*-plugin-*'), true);
+    });
+  });
+
+  describe('isPackageExcluded', () => {
+    it('should return false for empty patterns', () => {
+      assert.strictEqual(isPackageExcluded('lodash', []), false);
+    });
+
+    it('should match any pattern in array', () => {
+      const patterns = ['@types/*', 'eslint-*'];
+      assert.strictEqual(isPackageExcluded('@types/node', patterns), true);
+      assert.strictEqual(isPackageExcluded('eslint-plugin-react', patterns), true);
+      assert.strictEqual(isPackageExcluded('lodash', patterns), false);
+    });
+
+    it('should handle multiple patterns', () => {
+      const patterns = ['@types/*', '@babel/*', 'typescript'];
+      assert.strictEqual(isPackageExcluded('@types/react', patterns), true);
+      assert.strictEqual(isPackageExcluded('@babel/core', patterns), true);
+      assert.strictEqual(isPackageExcluded('typescript', patterns), true);
+      assert.strictEqual(isPackageExcluded('react', patterns), false);
     });
   });
 });

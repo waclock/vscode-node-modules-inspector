@@ -60,6 +60,16 @@
         "command": "nodeModulesVersions.openInNpm",
         "title": "Open in npm Registry",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "nodeModulesVersions.toggleDuplicatesOnly",
+        "title": "Toggle Duplicates Only",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "nodeModulesVersions.clearFilters",
+        "title": "Clear Filters",
+        "icon": "$(clear-all)"
       }
     ],
     "configuration": {
@@ -79,20 +89,38 @@
               "description": "URL pattern with {package} placeholder. Example: https://npm.mycompany.com/{package}/"
             }
           }
+        },
+        "nodeModulesInspector.excludePatterns": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Glob patterns for packages to exclude from the tree view. Example: ['@types/*', 'eslint-*']"
         }
       }
     },
     "menus": {
       "view/title": [
         {
+          "command": "nodeModulesVersions.toggleDuplicatesOnly",
+          "when": "view == nodeModulesVersions",
+          "group": "navigation@1"
+        },
+        {
           "command": "nodeModulesVersions.search",
           "when": "view == nodeModulesVersions",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "nodeModulesVersions.refresh",
           "when": "view == nodeModulesVersions",
-          "group": "navigation"
+          "group": "navigation@3"
+        },
+        {
+          "command": "nodeModulesVersions.clearFilters",
+          "when": "view == nodeModulesVersions && nodeModulesInspector.hasActiveFilters",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [

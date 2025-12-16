@@ -114,4 +114,34 @@ export function registerCommands(
       }
     )
   );
+
+  // Toggle duplicates-only filter command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('nodeModulesVersions.toggleDuplicatesOnly', () => {
+      provider.toggleDuplicatesOnly();
+      updateFilterContext(provider);
+      const status = provider.showDuplicatesOnly ? 'ON' : 'OFF';
+      vscode.window.showInformationMessage(`Duplicates only filter: ${status}`);
+    })
+  );
+
+  // Clear all filters command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('nodeModulesVersions.clearFilters', () => {
+      provider.clearFilters();
+      updateFilterContext(provider);
+      vscode.window.showInformationMessage('All filters cleared');
+    })
+  );
+
+  // Set initial context
+  updateFilterContext(provider);
+}
+
+function updateFilterContext(provider: NodeModulesProvider): void {
+  vscode.commands.executeCommand(
+    'setContext',
+    'nodeModulesInspector.hasActiveFilters',
+    provider.hasActiveFilters()
+  );
 }
