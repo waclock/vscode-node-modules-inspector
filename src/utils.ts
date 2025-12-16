@@ -1,4 +1,4 @@
-import { DependencyType, LocationType } from './types';
+import { DependencyType, LocationType, ModuleType, PackageJson } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -192,4 +192,54 @@ export function matchesGlobPattern(packageName: string, pattern: string): boolea
  */
 export function isPackageExcluded(packageName: string, excludePatterns: string[]): boolean {
   return excludePatterns.some(pattern => matchesGlobPattern(packageName, pattern));
+}
+
+/**
+ * Detects the module type of a package from its package.json
+ * - ESM: type: "module" or has exports with .mjs
+ * - CJS: type: "commonjs" or has main without module field
+ * - Dual: has both ESM and CJS entry points
+ * - Unknown: cannot determine
+ */
+export function detectModuleType(pkg: PackageJson): ModuleType {
+  const hasTypeModule = pkg.type === 'module';
+  const hasTypeCJS = pkg.type === 'commonjs';
+  const hasModuleField = !!pkg.module;
+  const hasMainField = !!pkg.main;
+  const hasExports = !!pkg.exports;
+
+  // Check exports field for dual support
+  if (hasExports && typeof pkg.exports === 'object') {
+    const exports = pkg.exports as Record<string, unknown>;
+    const hasCJSExport = 'require' in exports ||
+      (exports['.'] && typeof exports['.'] === 'object' && 'require' in (exports['.'] as Record<string, unknown>));
+    const hasESMExport = 'import' in exports ||
+      (exports['.'] && typeof exports['.'] === 'object' && 'import' in (exports['.'] as Record<string, unknown>));
+
+    if (hasCJSExport && hasESMExport) {
+      return ModuleType.Dual;
+    }
+    if (hasESMExport) {
+      return ModuleType.ESM;
+    }
+    if (hasCJSExport) {
+      return ModuleType.CJS;
+    }
+  }
+
+  // Has both module (ESM) and main (CJS) fields
+  if (hasModuleField && hasMainField) {
+    return ModuleType.Dual;
+  }
+
+  // Explicit type field
+  if (hasTypeModule) {
+    return ModuleType.ESM;
+  }
+
+  if (hasTypeCJS || hasMainField) {
+    return ModuleType.CJS;
+  }
+
+  return ModuleType.Unknown;
 }

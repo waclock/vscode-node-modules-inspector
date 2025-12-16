@@ -4,6 +4,17 @@ export interface PackageJson {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  type?: 'module' | 'commonjs';
+  exports?: Record<string, unknown> | string;
+  main?: string;
+  module?: string;
+}
+
+export enum ModuleType {
+  ESM = 'esm',
+  CJS = 'cjs',
+  Dual = 'dual',
+  Unknown = 'unknown'
 }
 
 export enum DependencyType {
@@ -27,6 +38,7 @@ export interface PackageInstance {
   locationType: LocationType;
   requiredBy?: string;
   size?: number; // Size in bytes
+  moduleType: ModuleType;
 }
 
 export interface PackageJsonCache {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { PackageInstance, DependencyType, LocationType } from './types';
-import { DEPENDENCY_TYPE_INFO, LOCATION_TYPE_INFO } from './constants';
+import { DEPENDENCY_TYPE_INFO, LOCATION_TYPE_INFO, MODULE_TYPE_INFO } from './constants';
 import { getUniqueVersions, hasVersionConflict as checkVersionConflict, buildVersionDescription, formatBytes } from './utils';
 
 export type TreeItem = PackageGroupItem | PackageInstanceItem;
@@ -77,9 +77,10 @@ export class PackageGroupItem extends vscode.TreeItem {
     for (const inst of instances) {
       const depInfo = DEPENDENCY_TYPE_INFO[inst.dependencyType];
       const locInfo = LOCATION_TYPE_INFO[inst.locationType];
+      const modInfo = MODULE_TYPE_INFO[inst.moduleType];
       const sizeStr = inst.size ? ` (${formatBytes(inst.size)})` : '';
       lines.push(`v${inst.version}${sizeStr} @ ${inst.resolvedAt}`);
-      lines.push(`  ${depInfo.label} | ${locInfo.label}`);
+      lines.push(`  ${depInfo.label} | ${locInfo.label} | ${modInfo.label}`);
       if (inst.requiredBy) {
         lines.push(`  Required by: ${inst.requiredBy}`);
       }
@@ -112,6 +113,7 @@ export class PackageInstanceItem extends vscode.TreeItem {
   private buildTooltip(instance: PackageInstance): vscode.MarkdownString {
     const depInfo = DEPENDENCY_TYPE_INFO[instance.dependencyType];
     const locInfo = LOCATION_TYPE_INFO[instance.locationType];
+    const modInfo = MODULE_TYPE_INFO[instance.moduleType];
 
     const tooltip = new vscode.MarkdownString();
     tooltip.appendMarkdown(`**${instance.resolvedAt}** \`v${instance.version}\`\n\n`);
@@ -121,6 +123,7 @@ export class PackageInstanceItem extends vscode.TreeItem {
     tooltip.appendMarkdown(`---\n\n`);
     tooltip.appendMarkdown(`$(${depInfo.icon}) **${depInfo.label}**: ${depInfo.description}\n\n`);
     tooltip.appendMarkdown(`$(${locInfo.icon}) **${locInfo.label}**: ${locInfo.description}\n\n`);
+    tooltip.appendMarkdown(`$(${modInfo.icon}) **${modInfo.label}**: ${modInfo.description}\n\n`);
     if (instance.requiredBy) {
       tooltip.appendMarkdown(`$(git-commit) **Required by**: \`${instance.requiredBy}\`\n\n`);
     }

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PackageJson, PackageInstance, PackageJsonCache, LocationType, PackageSearchResult } from './types';
-import { getDependencyType, getLocationType, formatResolvedPath, calculateDirectorySize, isPackageExcluded, hasVersionConflict } from './utils';
+import { getDependencyType, getLocationType, formatResolvedPath, calculateDirectorySize, isPackageExcluded, hasVersionConflict, detectModuleType } from './utils';
 import { TreeItem, PackageGroupItem, PackageInstanceItem } from './treeItems';
 
 export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -237,29 +237,46 @@ export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
   }
 
   private addPackageInstance(packageName: string, packagePath: string, root: string, parentPackage?: string): void {
-    const version = this.getPackageVersion(packagePath);
-    if (!version) return;
+    const pkg = this.getPackageJson(packagePath);
+    if (!pkg || !pkg.version) return;
 
     const relativePath = path.relative(root, packagePath);
     const resolvedAt = formatResolvedPath(relativePath);
     const dependencyType = getDependencyType(packageName, this.directDeps, this.devDeps, this.peerDeps);
     const locationType = getLocationType(relativePath);
     const size = calculateDirectorySize(packagePath);
+    const moduleType = detectModuleType(pkg);
 
     const instance: PackageInstance = {
-      version,
+      version: pkg.version,
       packagePath,
       resolvedAt,
       dependencyType,
       locationType,
       requiredBy: locationType === LocationType.Nested ? parentPackage : undefined,
-      size: size ?? undefined
+      size: size ?? undefined,
+      moduleType
     };
 
     if (!this.packageGroups.has(packageName)) {
       this.packageGroups.set(packageName, []);
     }
     this.packageGroups.get(packageName)!.push(instance);
+  }
+
+  private getPackageJson(packagePath: string): PackageJson | null {
+    const packageJsonPath = path.join(packagePath, 'package.json');
+
+    try {
+      if (fs.existsSync(packageJsonPath)) {
+        const content = fs.readFileSync(packageJsonPath, 'utf-8');
+        return JSON.parse(content);
+      }
+    } catch {
+      // Ignore read errors
+    }
+
+    return null;
   }
 
   private getPackageVersion(packagePath: string): string | null {

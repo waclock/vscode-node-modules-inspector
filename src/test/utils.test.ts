@@ -9,8 +9,10 @@ import {
   buildVersionDescription,
   formatBytes,
   matchesGlobPattern,
-  isPackageExcluded
+  isPackageExcluded,
+  detectModuleType
 } from '../utils';
+import { ModuleType } from '../types';
 import { DependencyType, LocationType } from '../types';
 
 describe('Utils', () => {
@@ -288,6 +290,71 @@ describe('Utils', () => {
       assert.strictEqual(isPackageExcluded('@babel/core', patterns), true);
       assert.strictEqual(isPackageExcluded('typescript', patterns), true);
       assert.strictEqual(isPackageExcluded('react', patterns), false);
+    });
+  });
+
+  describe('detectModuleType', () => {
+    it('should detect ESM from type: module', () => {
+      assert.strictEqual(detectModuleType({ type: 'module' }), ModuleType.ESM);
+    });
+
+    it('should detect CJS from type: commonjs', () => {
+      assert.strictEqual(detectModuleType({ type: 'commonjs' }), ModuleType.CJS);
+    });
+
+    it('should detect CJS from main field only', () => {
+      assert.strictEqual(detectModuleType({ main: 'index.js' }), ModuleType.CJS);
+    });
+
+    it('should detect Dual from main + module fields', () => {
+      assert.strictEqual(detectModuleType({ main: 'index.js', module: 'index.mjs' }), ModuleType.Dual);
+    });
+
+    it('should detect Dual from exports with import and require', () => {
+      assert.strictEqual(detectModuleType({
+        exports: {
+          '.': {
+            import: './index.mjs',
+            require: './index.cjs'
+          }
+        }
+      }), ModuleType.Dual);
+    });
+
+    it('should detect ESM from exports with import only', () => {
+      assert.strictEqual(detectModuleType({
+        exports: {
+          '.': {
+            import: './index.mjs'
+          }
+        }
+      }), ModuleType.ESM);
+    });
+
+    it('should detect CJS from exports with require only', () => {
+      assert.strictEqual(detectModuleType({
+        exports: {
+          '.': {
+            require: './index.cjs'
+          }
+        }
+      }), ModuleType.CJS);
+    });
+
+    it('should return Unknown for empty package.json', () => {
+      assert.strictEqual(detectModuleType({}), ModuleType.Unknown);
+    });
+
+    it('should prioritize exports over type field', () => {
+      assert.strictEqual(detectModuleType({
+        type: 'commonjs',
+        exports: {
+          '.': {
+            import: './index.mjs',
+            require: './index.cjs'
+          }
+        }
+      }), ModuleType.Dual);
     });
   });
 });

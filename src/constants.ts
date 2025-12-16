@@ -1,4 +1,4 @@
-import { DependencyType, LocationType } from './types';
+import { DependencyType, LocationType, ModuleType } from './types';
 
 export interface TypeInfo {
   icon: string;
@@ -51,5 +51,31 @@ export const LOCATION_TYPE_INFO: Record<LocationType, TypeInfo> = {
     color: 'charts.orange',
     label: 'Workspace',
     description: 'In a workspace/monorepo sub-package'
+  }
+};
+
+export const MODULE_TYPE_INFO: Record<ModuleType, TypeInfo> = {
+  [ModuleType.ESM]: {
+    icon: 'symbol-module',
+    color: 'charts.green',
+    label: 'ESM',
+    description: 'ECMAScript Module (import/export)'
+  },
+  [ModuleType.CJS]: {
+    icon: 'symbol-namespace',
+    color: 'charts.blue',
+    label: 'CJS',
+    description: 'CommonJS Module (require/module.exports)'
+  },
+  [ModuleType.Dual]: {
+    icon: 'layers',
+    color: 'charts.purple',
+    label: 'Dual',
+    description: 'Supports both ESM and CommonJS'
+  },
+  [ModuleType.Unknown]: {
+    icon: 'question',
+    label: 'Unknown',
+    description: 'Module type could not be determined'
   }
 };
