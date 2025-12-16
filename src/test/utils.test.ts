@@ -6,7 +6,8 @@ import {
   extractPackageNameFromPath,
   getUniqueVersions,
   hasVersionConflict,
-  buildVersionDescription
+  buildVersionDescription,
+  formatBytes
 } from '../utils';
 import { DependencyType, LocationType } from '../types';
 
@@ -199,6 +200,39 @@ describe('Utils', () => {
         buildVersionDescription(['1.0.0', '2.0.0', '3.0.0', '1.0.0'], 4, true),
         '⚠ [1.0.0 ↔ 2.0.0 ↔ 3.0.0]'
       );
+    });
+  });
+
+  describe('formatBytes', () => {
+    it('should format 0 bytes', () => {
+      assert.strictEqual(formatBytes(0), '0 B');
+    });
+
+    it('should format bytes without decimals', () => {
+      assert.strictEqual(formatBytes(100), '100 B');
+      assert.strictEqual(formatBytes(1023), '1023 B');
+    });
+
+    it('should format kilobytes with one decimal', () => {
+      assert.strictEqual(formatBytes(1024), '1.0 KB');
+      assert.strictEqual(formatBytes(1536), '1.5 KB');
+      assert.strictEqual(formatBytes(10240), '10.0 KB');
+    });
+
+    it('should format megabytes with one decimal', () => {
+      assert.strictEqual(formatBytes(1048576), '1.0 MB');
+      assert.strictEqual(formatBytes(1572864), '1.5 MB');
+      assert.strictEqual(formatBytes(5242880), '5.0 MB');
+    });
+
+    it('should format gigabytes with one decimal', () => {
+      assert.strictEqual(formatBytes(1073741824), '1.0 GB');
+      assert.strictEqual(formatBytes(2147483648), '2.0 GB');
+    });
+
+    it('should handle large numbers', () => {
+      // Stays at GB even for very large values
+      assert.strictEqual(formatBytes(10737418240), '10.0 GB');
     });
   });
 });

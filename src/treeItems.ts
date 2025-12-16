@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { PackageInstance, DependencyType, LocationType } from './types';
 import { DEPENDENCY_TYPE_INFO, LOCATION_TYPE_INFO } from './constants';
-import { getUniqueVersions, hasVersionConflict as checkVersionConflict, buildVersionDescription } from './utils';
+import { getUniqueVersions, hasVersionConflict as checkVersionConflict, buildVersionDescription, formatBytes } from './utils';
 
 export type TreeItem = PackageGroupItem | PackageInstanceItem;
 
@@ -62,6 +62,12 @@ export class PackageGroupItem extends vscode.TreeItem {
   private buildTooltip(packageName: string, instances: PackageInstance[], hasVersionConflict: boolean): string {
     const lines = [packageName];
 
+    // Calculate total size across all instances
+    const totalSize = instances.reduce((sum, inst) => sum + (inst.size || 0), 0);
+    if (totalSize > 0) {
+      lines.push(`📦 Total size: ${formatBytes(totalSize)}`);
+    }
+
     if (hasVersionConflict) {
       const versions = getUniqueVersions(instances.map(i => i.version));
       lines.push(`⚠️ VERSION CONFLICT: ${versions.length} different versions installed`);
@@ -71,7 +77,8 @@ export class PackageGroupItem extends vscode.TreeItem {
     for (const inst of instances) {
       const depInfo = DEPENDENCY_TYPE_INFO[inst.dependencyType];
       const locInfo = LOCATION_TYPE_INFO[inst.locationType];
-      lines.push(`v${inst.version} @ ${inst.resolvedAt}`);
+      const sizeStr = inst.size ? ` (${formatBytes(inst.size)})` : '';
+      lines.push(`v${inst.version}${sizeStr} @ ${inst.resolvedAt}`);
       lines.push(`  ${depInfo.label} | ${locInfo.label}`);
       if (inst.requiredBy) {
         lines.push(`  Required by: ${inst.requiredBy}`);
@@ -108,6 +115,9 @@ export class PackageInstanceItem extends vscode.TreeItem {
 
     const tooltip = new vscode.MarkdownString();
     tooltip.appendMarkdown(`**${instance.resolvedAt}** \`v${instance.version}\`\n\n`);
+    if (instance.size) {
+      tooltip.appendMarkdown(`$(package) **Size**: ${formatBytes(instance.size)}\n\n`);
+    }
     tooltip.appendMarkdown(`---\n\n`);
     tooltip.appendMarkdown(`$(${depInfo.icon}) **${depInfo.label}**: ${depInfo.description}\n\n`);
     tooltip.appendMarkdown(`$(${locInfo.icon}) **${locInfo.label}**: ${locInfo.description}\n\n`);

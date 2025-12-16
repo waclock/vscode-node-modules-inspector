@@ -26,6 +26,7 @@ export interface PackageInstance {
   dependencyType: DependencyType;
   locationType: LocationType;
   requiredBy?: string;
+  size?: number; // Size in bytes
 }
 
 export interface PackageJsonCache {

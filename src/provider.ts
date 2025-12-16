@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PackageJson, PackageInstance, PackageJsonCache, LocationType, PackageSearchResult } from './types';
-import { getDependencyType, getLocationType, formatResolvedPath } from './utils';
+import { getDependencyType, getLocationType, formatResolvedPath, calculateDirectorySize } from './utils';
 import { TreeItem, PackageGroupItem, PackageInstanceItem } from './treeItems';
 
 export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -205,6 +205,7 @@ export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
     const resolvedAt = formatResolvedPath(relativePath);
     const dependencyType = getDependencyType(packageName, this.directDeps, this.devDeps, this.peerDeps);
     const locationType = getLocationType(relativePath);
+    const size = calculateDirectorySize(packagePath);
 
     const instance: PackageInstance = {
       version,
@@ -212,7 +213,8 @@ export class NodeModulesProvider implements vscode.TreeDataProvider<TreeItem> {
       resolvedAt,
       dependencyType,
       locationType,
-      requiredBy: locationType === LocationType.Nested ? parentPackage : undefined
+      requiredBy: locationType === LocationType.Nested ? parentPackage : undefined,
+      size: size ?? undefined
     };
 
     if (!this.packageGroups.has(packageName)) {

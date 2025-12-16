@@ -1,4 +1,6 @@
 import { DependencyType, LocationType } from './types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Builds a registry URL from a pattern and package name
@@ -124,4 +126,49 @@ export function buildVersionDescription(
 
   // Version conflict - show warning indicator
   return `⚠ [${uniqueVersions.join(' ↔ ')}]`;
+}
+
+/**
+ * Formats bytes into a human-readable string
+ */
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const k = 1024;
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), units.length - 1);
+
+  const value = bytes / Math.pow(k, i);
+  // Use 1 decimal for KB+, no decimals for bytes
+  const formatted = i === 0 ? value.toString() : value.toFixed(1);
+
+  return `${formatted} ${units[i]}`;
+}
+
+/**
+ * Calculates the total size of a directory recursively
+ * Returns size in bytes, or null if calculation fails
+ */
+export function calculateDirectorySize(dirPath: string): number | null {
+  try {
+    let totalSize = 0;
+
+    const calculateSize = (currentPath: string): void => {
+      const stats = fs.statSync(currentPath);
+
+      if (stats.isFile()) {
+        totalSize += stats.size;
+      } else if (stats.isDirectory()) {
+        const entries = fs.readdirSync(currentPath);
+        for (const entry of entries) {
+          calculateSize(path.join(currentPath, entry));
+        }
+      }
+    };
+
+    calculateSize(dirPath);
+    return totalSize;
+  } catch {
+    return null;
+  }
 }
