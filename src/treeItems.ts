@@ -28,7 +28,7 @@ export class PackageGroupItem extends vscode.TreeItem {
     if (!hasMultiple) {
       this.command = {
         command: 'nodeModulesVersions.openPackageJson',
-        title: 'Open package.json',
+        title: 'Show Source',
         arguments: [new PackageInstanceItem(instances[0], workspaceRoot)]
       };
     }
@@ -107,7 +107,7 @@ export class PackageInstanceItem extends vscode.TreeItem {
       tooltip.appendMarkdown(`$(git-commit) **Required by**: \`${instance.requiredBy}\`\n\n`);
     }
     tooltip.appendMarkdown(`---\n\n`);
-    tooltip.appendMarkdown(`*Click to open package.json*`);
+    tooltip.appendMarkdown(`*Click to view source*`);
     tooltip.supportThemeIcons = true;
     return tooltip;
   }

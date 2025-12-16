@@ -2,7 +2,7 @@
   "name": "node-modules-inspector",
   "displayName": "Node Modules Inspector",
   "description": "Inspect node_modules with version info, dependency classification, and smart grouping for monorepos",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "publisher": "waclock",
   "repository": {
     "type": "git",
@@ -33,7 +33,7 @@
       "explorer": [
         {
           "id": "nodeModulesVersions",
-          "name": "Node Modules Explorer"
+          "name": "Node Modules Inspector"
         }
       ]
     },
@@ -50,7 +50,7 @@
       },
       {
         "command": "nodeModulesVersions.openPackageJson",
-        "title": "Open package.json"
+        "title": "Show Source"
       },
       {
         "command": "nodeModulesVersions.revealInExplorer",
